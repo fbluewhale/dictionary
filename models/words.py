@@ -1,6 +1,6 @@
 from enum import Enum
 from pymongo import MongoClient
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class SupportedLanguage(Enum):
@@ -11,9 +11,9 @@ class SupportedLanguage(Enum):
 
 class WordModel(BaseModel):
     word: str = Field(..., min_length=1)
-    meanings: dict[str, str] 
+    meanings: dict[str, str]
 
-    @validator("meanings")
+    @field_validator("meanings")
     def validate_meanings(cls, v):
         if not all(
             isinstance(key, str) and isinstance(value, str) for key, value in v.items()
