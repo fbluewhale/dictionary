@@ -49,3 +49,23 @@ Run the main CLI application:
 ```
 python main.py
 ```
+
+## Testing and Test Coverage
+
+To run the tests, execute:
+```
+pytest
+```
+To generate a test coverage report, run:
+```
+coverage run -m pytest
+coverage report -m
+```
+or
+```
+pytest --cov --cov-report=html:coverage_re
+```
+Ensure you have installed the testing dependencies:
+```
+pip install pytest coverage
+```
