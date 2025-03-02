@@ -96,7 +96,7 @@ def test_update_nonexistent_word():
     dictionary = Dictionary(db)
     with pytest.raises(Exception) as excinfo:
         dictionary.update("nonexistent", "en", "hi")
-    assert "does not exist" in str(excinfo.value)
+    assert "not found" in str(excinfo.value)
 
 
 def test_search_prefix():

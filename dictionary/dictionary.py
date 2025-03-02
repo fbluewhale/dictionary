@@ -1,6 +1,6 @@
 from db.database import *
 from dictionary.tie import Trie
-from models.words import WordModel
+from dictionary.word import WordCRUD
 
 
 class Dictionary:
@@ -8,19 +8,17 @@ class Dictionary:
         self.db = db
         self.trie = Trie()
         self.update_trie()
+        self.crud = WordCRUD(db)
 
     def write(self, new_word: str, meanings: dict[str, str]) -> bool:
         """
         Adds a new word with its meanings to the database.
         meanings: A dictionary with language keys ("fa", "en", "fe") and their respective translations.
         """
-        if not self.db.exists(new_word):
-            word_entry = WordModel(word=new_word, meanings=meanings)
-            self.db.write(word_entry.serialize())
+        creations_response = self.crud.create(new_word=new_word, meanings=meanings)
+        if creations_response:
             self.update_trie()
-            return True
-        else:
-            return False
+        return creations_response
 
     def read(self, key: str, lang: str) -> str:
         """
@@ -28,41 +26,34 @@ class Dictionary:
         key: The word to lookup.
         lang: The language in which to retrieve the meaning.
         """
-        result = self.db.get_or_none(key)
-
-        if not result:
-            raise Exception(f"The word '{key}' was not found!")
-
-        meaning = result.get("meanings", {}).get(lang)
-
+        word = self.crud.get(key)
+        meaning = word.get("meanings", {}).get(lang)
         if not meaning:
             raise Exception(f"The word '{key}' does not have a definition in {lang}.")
-
         return meaning
 
-    def update(self, word: str, lang: str, definition) -> None:
-        record = self.db.get_or_none(word)
-        if not record:
-            raise Exception(f"The word '{word}' does not exist!")
-        meanings = record.get("meanings", {})
-        if isinstance(definition, dict):
-            meanings.update(definition)
-        else:
-            meanings[lang] = definition
-        self.db.update(word, {"meanings": meanings})
-        self.update_trie()
+    def update(self, key: str, lang: str, definition) -> None:
+        update_status = self.crud.update(key, lang, definition)
+        if update_status:
+            self.update_trie()
+
+    def update_trie_with_list_data(self, data: list, trie):
+        for doc in data:
+            word = doc.get("word")
+            if word:
+                trie.insert(word)
+
+    def update_trie_with_dict_data(self, data: list, trie):
+        for word in data.keys():
+            trie.insert(word)
 
     def update_trie(self):
         trie = self.trie
         data = self.db.get_whole_data()
         if isinstance(data, list):
-            for doc in data:
-                word = doc.get("word")
-                if word:
-                    trie.insert(word)
+            self.update_trie_with_list_data(data, trie)
         elif isinstance(data, dict):
-            for word in data.keys():
-                trie.insert(word)
+            self.update_trie_with_dict_data(data, trie)
 
     def search(self, prefix: str) -> list[str]:
         return self.trie.starts_with(prefix)
